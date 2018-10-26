@@ -117,7 +117,16 @@ namespace Grammophone.DataAccess.SqlServer.Search
 
 				if (token.Length == 0) continue;
 
-				formsExpressions.Add($"FORMSOF(INFLECTIONAL, {token})");
+				switch (this.SearchPhraseMode)
+				{
+					case SearchPhraseMode.Prefix:
+						formsExpressions.Add($"\"{token}*\"");
+						break;
+
+					default:
+						formsExpressions.Add($"FORMSOF(INFLECTIONAL, {token})");
+						break;
+				}
 			}
 
 			return String.Join(" AND ", formsExpressions);
