@@ -13,7 +13,7 @@ var (convertedSearchString, parsedSuccessfully) =
 
 ```
 
-If the second member of the tuple indicates that the search string was not parsed successfully, a simpler tokenization takes place by invoking `SearchParser.SimpleParseToText(string)` as a fallback and is returned as a result.
+The parser is thread-safe and can be a singleton. If the second member of the tuple indicates that the search string was not parsed successfully, a simpler tokenization takes place by invoking `SearchParser.SimpleParseToText(string)` as a fallback and is returned as a result.
 
 This is the syntax cheat sheet as given in the original article:
 ![syntax cheat sheet](https://github.com/grammophone/Grammophone.DataAccess.SqlServer.Search/raw/master/Syntax%20cheat%20sheet.png)
