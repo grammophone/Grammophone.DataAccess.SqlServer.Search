@@ -13,7 +13,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 	/// </summary>
 	/// <remarks>
 	/// Adapted from http://www.sqlservercentral.com/articles/Full-Text+Search+(2008)/64248/
-	/// with correstions, improvements and updates for the newest Irony version.
+	/// with corrections, improvements and updates for the newest Irony version.
 	/// </remarks>
 	public class SearchParser : Parser
 	{
@@ -30,9 +30,9 @@ namespace Grammophone.DataAccess.SqlServer.Search
 
 		#region Private fields
 
-		private static Regex stripSpecialCharactersRegex;
+		private readonly static Regex stripSpecialCharactersRegex;
 
-		private static ISet<string> simpleStopWords;
+		private readonly static ISet<string> simpleStopWords;
 
 		#endregion
 
@@ -41,11 +41,9 @@ namespace Grammophone.DataAccess.SqlServer.Search
 		/// <summary>
 		/// Create.
 		/// </summary>
-		/// <param name="searchPhraseMode">The default behavior of search terms.</param>
-		public SearchParser(SearchPhraseMode searchPhraseMode)
+		public SearchParser()
 			: base(new SearchGrammar())
 		{
-			this.SearchPhraseMode = searchPhraseMode;
 		}
 
 		static SearchParser()
@@ -54,18 +52,10 @@ namespace Grammophone.DataAccess.SqlServer.Search
 
 			simpleStopWords = new HashSet<string>
 			{
-				"and", "or", "not", "a", "the", "he", "his", "him", "she", "hers", "her", "it", "its"
+				"and", "or", "a", "the", "he", "his", "him", "she", "hers", "her", "it", "its", "we", "our", "ours", "you", "your", "yours",
+				"they", "their", "theirs", "us", "them"
 			};
 		}
-
-		#endregion
-
-		#region Public properties
-
-		/// <summary>
-		/// The default behavior of search terms.
-		/// </summary>
-		public SearchPhraseMode SearchPhraseMode { get; }
 
 		#endregion
 
@@ -73,14 +63,15 @@ namespace Grammophone.DataAccess.SqlServer.Search
 
 		/// <summary>
 		/// Attempts to parse a source text in search syntax to SQL Server 'CONTAINS/CONTAINSTABLE' syntax.
-		/// If parsing fais, it falls to simple tokenization via <see cref="SimpleParseToText(string)"/>.
+		/// If parsing fais, it falls to simple tokenization via <see cref="SimpleParseToText(string, SearchPhraseMode)"/>.
 		/// </summary>
 		/// <param name="sourceText">The search phrase to convert.</param>
+		/// <param name="searchPhraseMode">The default behavior of search terms.</param>
 		/// <returns>
 		/// Returns a tuple of which the first member is the converted text and the second is true if parsing was successful
 		/// or false if there was parse error and fell back to simple tokenization.
 		/// </returns>
-		public (string convertedText, bool parsedSuccessfully) ParseToText(string sourceText)
+		public (string convertedText, bool parsedSuccessfully) ParseToText(string sourceText, SearchPhraseMode searchPhraseMode)
 		{
 			if (sourceText == null) throw new ArgumentNullException(nameof(sourceText));
 
@@ -90,7 +81,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 			{
 				if (!parseTree.HasErrors())
 				{
-					return (ParseTreeToText(parseTree), true);
+					return (ParseTreeToText(parseTree, searchPhraseMode), true);
 				}
 			}
 			catch (ApplicationException)
@@ -98,29 +89,31 @@ namespace Grammophone.DataAccess.SqlServer.Search
 				// If proper parsing fails, fall back to simple parsing.
 			}
 
-			return (SimpleParseToText(sourceText), false);
+			return (SimpleParseToText(sourceText, searchPhraseMode), false);
 		}
 
 		/// <summary>
 		/// Convert a search parse tree to SQL Server 'CONTAINS/CONTAINSTABLE' syntax text. 
 		/// </summary>
 		/// <param name="parseTree">The search phrase to convert.</param>
+		/// <param name="searchPhraseMode">The default behavior of search terms.</param>
 		/// <returns>Returns the SQL Server 'CONTAINS/CONTAINSTABLE' syntax text.</returns>
-		public string ParseTreeToText(ParseTree parseTree)
+		public string ParseTreeToText(ParseTree parseTree, SearchPhraseMode searchPhraseMode)
 		{
 			if (parseTree == null) throw new ArgumentNullException(nameof(parseTree));
 
-			return NodeToText(parseTree.Root, TermType.Inflectional);
+			return NodeToText(parseTree.Root, TermType.Inflectional, searchPhraseMode);
 		}
 
 		/// <summary>
 		/// Produce a 'CONTAINS/CONTAINSTABLE' seatch phrase by simple tokenization of a source text.
 		/// </summary>
 		/// <param name="sourceText">The search text to convert.</param>
+		/// <param name="searchPhraseMode">The default behavior of search terms.</param>
 		/// <returns>
 		/// Returns a 'CONTAINS/CONTAINSTABLE' seatch phrase with tokens connected with AND operator.
 		/// </returns>
-		public string SimpleParseToText(string sourceText)
+		public string SimpleParseToText(string sourceText, SearchPhraseMode searchPhraseMode)
 		{
 			if (sourceText == null) throw new ArgumentNullException(nameof(sourceText));
 
@@ -136,7 +129,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 
 				if (token.Length == 0 || simpleStopWords.Contains(token.ToLower())) continue;
 
-				switch (this.SearchPhraseMode)
+				switch (searchPhraseMode)
 				{
 					case SearchPhraseMode.Prefix:
 						formsExpressions.Add($"\"{token}*\"");
@@ -155,7 +148,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 
 		#region Private methods
 
-		private string NodeToText(ParseTreeNode node, TermType type)
+		private string NodeToText(ParseTreeNode node, TermType type, SearchPhraseMode searchPhraseMode)
 		{
 			string result = "";
 
@@ -172,12 +165,12 @@ namespace Grammophone.DataAccess.SqlServer.Search
 
 					if (node.ChildNodes.Count == 1)
 					{
-						result = NodeToText(node.ChildNodes[0], type);
+						result = NodeToText(node.ChildNodes[0], type, searchPhraseMode);
 						break;
 					}
 
 					// The parenthesis emulates that OR has precedence over AND in Google syntax.
-					result = $"({NodeToText(node.ChildNodes[0], type)} OR {NodeToText(node.ChildNodes[2], type)})";
+					result = $"({NodeToText(node.ChildNodes[0], type, searchPhraseMode)} OR {NodeToText(node.ChildNodes[2], type, searchPhraseMode)})";
 					break;
 
 				case "AndExpression":
@@ -185,7 +178,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 
 					if (node.ChildNodes.Count == 1)
 					{
-						result = NodeToText(node.ChildNodes[0], type);
+						result = NodeToText(node.ChildNodes[0], type, searchPhraseMode);
 						break;
 					}
 
@@ -204,21 +197,21 @@ namespace Grammophone.DataAccess.SqlServer.Search
 					}
 					//result = "(" + ConvertQuery(node.ChildNodes[0], type) + andop +
 					//		ConvertQuery(node.ChildNodes[2], type) + ")";
-					result = $" {NodeToText(node.ChildNodes[0], type)}{andop}{NodeToText(node.ChildNodes[2], type)} ";
+					result = $" {NodeToText(node.ChildNodes[0], type, searchPhraseMode)}{andop}{NodeToText(node.ChildNodes[2], type, searchPhraseMode)} ";
 					type = TermType.Inflectional;
 					break;
 
 				case "PrimaryExpression":
 					//result = "(" + ConvertQuery(node.ChildNodes[0], type) + ")";
-					result = NodeToText(node.ChildNodes[0], type);
+					result = NodeToText(node.ChildNodes[0], type, searchPhraseMode);
 					break;
 
 				case "ProximityExpression":
-					result = NodeToText(node.ChildNodes[0], type);
+					result = NodeToText(node.ChildNodes[0], type, searchPhraseMode);
 					break;
 
 				case "ParenthesizedExpression":
-					result = $"({NodeToText(node.ChildNodes[0], type)})";
+					result = $"({NodeToText(node.ChildNodes[0], type, searchPhraseMode)})";
 					break;
 
 				case "ProximityList":
@@ -226,7 +219,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 					type = TermType.Exact;
 					for (int i = 0; i < node.ChildNodes.Count; i++)
 					{
-						tmp[i] = NodeToText(node.ChildNodes[i], type);
+						tmp[i] = NodeToText(node.ChildNodes[i], type, searchPhraseMode);
 					}
 					result = $"({string.Join(" NEAR ", tmp)})";
 					type = TermType.Inflectional;
@@ -246,7 +239,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 					break;
 
 				case "ExcludeExpression":
-					result = $" NOT({NodeToText(node.ChildNodes[1], TermType.Inflectional)})";
+					result = $" NOT({NodeToText(node.ChildNodes[1], TermType.Inflectional, searchPhraseMode)})";
 					break;
 
 				case "Term":
@@ -255,7 +248,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 						case TermType.Inflectional:
 							result = node.FindTokenAndGetText();
 
-							switch (this.SearchPhraseMode)
+							switch (searchPhraseMode)
 							{
 								case SearchPhraseMode.Prefix:
 									if (result.EndsWith("*"))

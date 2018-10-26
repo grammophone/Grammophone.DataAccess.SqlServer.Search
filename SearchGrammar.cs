@@ -13,7 +13,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 	/// </summary>
 	/// <remarks>
 	/// Adapted from http://www.sqlservercentral.com/articles/Full-Text+Search+(2008)/64248/
-	/// with correstions, improvements and updates for the newest Irony version.
+	/// with corrections, improvements and updates for the newest Irony version.
 	/// </remarks>
 	public class SearchGrammar : Grammar
 	{

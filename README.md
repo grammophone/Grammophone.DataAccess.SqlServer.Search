@@ -6,10 +6,10 @@ This library contains extra options, corrections, improvements and updates for t
 
 Usage:
 ```C#
-var parser = new SearchParser(SearchPhraseMode.Inflectional);
+var parser = new SearchParser();
 
-var (convertedSearchString, parsedSuccessfully) =
-  parser.ParseToText("(drugs or medication) -marijuana");
+(string convertedSearchString, bool parsedSuccessfully) =
+  parser.ParseToText("(drugs or medication) -marijuana", SearchPhraseMode.Inflectional);
 
 ```
 
