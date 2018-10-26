@@ -83,7 +83,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 			{
 				if (!parseTree.HasErrors())
 				{
-					return (ConvertQuery(parseTree.Root, TermType.Inflectional), true);
+					return (ParseTreeToText(parseTree), true);
 				}
 			}
 			catch (ApplicationException)
@@ -92,6 +92,18 @@ namespace Grammophone.DataAccess.SqlServer.Search
 			}
 
 			return (SimpleParseToText(sourceText), false);
+		}
+
+		/// <summary>
+		/// Convert a search parse tree to SQL Server 'CONTAINS/CONTAINSTABLE' syntax text. 
+		/// </summary>
+		/// <param name="parseTree">The search phrase to convert.</param>
+		/// <returns>Returns the SQL Server 'CONTAINS/CONTAINSTABLE' syntax text.</returns>
+		public string ParseTreeToText(ParseTree parseTree)
+		{
+			if (parseTree == null) throw new ArgumentNullException(nameof(parseTree));
+
+			return NodeToText(parseTree.Root, TermType.Inflectional);
 		}
 
 		/// <summary>
@@ -136,7 +148,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 
 		#region Private methods
 
-		private string ConvertQuery(ParseTreeNode node, TermType type)
+		private string NodeToText(ParseTreeNode node, TermType type)
 		{
 			string result = "";
 
@@ -153,12 +165,12 @@ namespace Grammophone.DataAccess.SqlServer.Search
 
 					if (node.ChildNodes.Count == 1)
 					{
-						result = ConvertQuery(node.ChildNodes[0], type);
+						result = NodeToText(node.ChildNodes[0], type);
 						break;
 					}
 
 					// The parenthesis emulates that OR has precedence over AND in Google syntax.
-					result = $"({ConvertQuery(node.ChildNodes[0], type)} OR {ConvertQuery(node.ChildNodes[2], type)})";
+					result = $"({NodeToText(node.ChildNodes[0], type)} OR {NodeToText(node.ChildNodes[2], type)})";
 					break;
 
 				case "AndExpression":
@@ -166,7 +178,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 
 					if (node.ChildNodes.Count == 1)
 					{
-						result = ConvertQuery(node.ChildNodes[0], type);
+						result = NodeToText(node.ChildNodes[0], type);
 						break;
 					}
 
@@ -185,21 +197,21 @@ namespace Grammophone.DataAccess.SqlServer.Search
 					}
 					//result = "(" + ConvertQuery(node.ChildNodes[0], type) + andop +
 					//		ConvertQuery(node.ChildNodes[2], type) + ")";
-					result = $" {ConvertQuery(node.ChildNodes[0], type)}{andop}{ConvertQuery(node.ChildNodes[2], type)} ";
+					result = $" {NodeToText(node.ChildNodes[0], type)}{andop}{NodeToText(node.ChildNodes[2], type)} ";
 					type = TermType.Inflectional;
 					break;
 
 				case "PrimaryExpression":
 					//result = "(" + ConvertQuery(node.ChildNodes[0], type) + ")";
-					result = ConvertQuery(node.ChildNodes[0], type);
+					result = NodeToText(node.ChildNodes[0], type);
 					break;
 
 				case "ProximityExpression":
-					result = ConvertQuery(node.ChildNodes[0], type);
+					result = NodeToText(node.ChildNodes[0], type);
 					break;
 
 				case "ParenthesizedExpression":
-					result = $"({ConvertQuery(node.ChildNodes[0], type)})";
+					result = $"({NodeToText(node.ChildNodes[0], type)})";
 					break;
 
 				case "ProximityList":
@@ -207,7 +219,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 					type = TermType.Exact;
 					for (int i = 0; i < node.ChildNodes.Count; i++)
 					{
-						tmp[i] = ConvertQuery(node.ChildNodes[i], type);
+						tmp[i] = NodeToText(node.ChildNodes[i], type);
 					}
 					result = $"({string.Join(" NEAR ", tmp)})";
 					type = TermType.Inflectional;
