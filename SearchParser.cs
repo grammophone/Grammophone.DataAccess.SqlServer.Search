@@ -32,6 +32,8 @@ namespace Grammophone.DataAccess.SqlServer.Search
 
 		private static Regex stripSpecialCharactersRegex;
 
+		private static ISet<string> simpleStopWords;
+
 		#endregion
 
 		#region Construction
@@ -49,6 +51,11 @@ namespace Grammophone.DataAccess.SqlServer.Search
 		static SearchParser()
 		{
 			stripSpecialCharactersRegex = new Regex(@"[!@#\$%\^\*_'\.\?""\(\);\+\-\&\|]", RegexOptions.Compiled | RegexOptions.Singleline);
+
+			simpleStopWords = new HashSet<string>
+			{
+				"and", "or", "not", "a", "the", "he", "his", "him", "she", "hers", "her", "it", "its"
+			};
 		}
 
 		#endregion
@@ -127,7 +134,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 			{
 				string token = tokens[i];
 
-				if (token.Length == 0) continue;
+				if (token.Length == 0 || simpleStopWords.Contains(token.ToLower())) continue;
 
 				switch (this.SearchPhraseMode)
 				{
