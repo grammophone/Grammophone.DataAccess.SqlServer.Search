@@ -55,7 +55,9 @@
     <Compile Include="SearchPhraseMode.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="LICENSE.md" />
     <None Include="packages.config" />
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Syntax cheat sheet.png" />
