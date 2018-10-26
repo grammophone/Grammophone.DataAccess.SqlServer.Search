@@ -44,6 +44,7 @@ namespace Grammophone.DataAccess.SqlServer.Search
 			var AndExpression = new NonTerminal("AndExpression");
 			var AndOperator = new NonTerminal("AndOperator");
 			var ExcludeOperator = new NonTerminal("ExcludeOperator");
+			var ExcludeExpression = new NonTerminal("ExcludeExpression");
 			var PrimaryExpression = new NonTerminal("PrimaryExpression");
 			var ThesaurusExpression = new NonTerminal("ThesaurusExpression");
 			var ThesaurusOperator = new NonTerminal("ThesaurusOperator");
@@ -54,16 +55,22 @@ namespace Grammophone.DataAccess.SqlServer.Search
 			var ProximityList = new NonTerminal("ProximityList");
 
 			this.Root = OrExpression;
+
 			OrExpression.Rule = AndExpression
 												| OrExpression + OrOperator + AndExpression;
+
 			OrOperator.Rule = ToTerm("or") | "|";
+
 			AndExpression.Rule = PrimaryExpression
-												 | AndExpression + AndOperator + PrimaryExpression;
+												 | AndExpression + AndOperator + PrimaryExpression
+												 | AndExpression + AndOperator + ExcludeExpression;
+
 			AndOperator.Rule = Empty
 											 | "and"
-											 | "&"
-											 | ExcludeOperator;
+											 | "&";
+
 			ExcludeOperator.Rule = ToTerm("-");
+
 			PrimaryExpression.Rule = Term
 														 | ThesaurusExpression
 														 | ExactExpression
@@ -71,13 +78,21 @@ namespace Grammophone.DataAccess.SqlServer.Search
 														 | QuotedPhrase
 														 | DoubleQuotedPhrase
 														 | ProximityExpression;
+
 			ThesaurusExpression.Rule = ThesaurusOperator + Term;
+
 			ThesaurusOperator.Rule = ToTerm("~");
+
 			ExactExpression.Rule = ExactOperator + Term
 													 | ExactOperator + QuotedPhrase
 													 | ExactOperator + DoubleQuotedPhrase;
+
+			ExcludeExpression.Rule = ExcludeOperator + PrimaryExpression;
+
 			ExactOperator.Rule = ToTerm("+");
+
 			ParenthesizedExpression.Rule = "(" + OrExpression + ")";
+
 			ProximityExpression.Rule = "<" + ProximityList + ">";
 
 			MakePlusRule(ProximityList, Term);

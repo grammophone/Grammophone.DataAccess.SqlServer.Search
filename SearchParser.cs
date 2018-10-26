@@ -245,6 +245,10 @@ namespace Grammophone.DataAccess.SqlServer.Search
 					result = $" \"{node.ChildNodes[1].FindTokenAndGetText()}\" ";
 					break;
 
+				case "ExcludeExpression":
+					result = $" NOT({NodeToText(node.ChildNodes[1], TermType.Inflectional)})";
+					break;
+
 				case "Term":
 					switch (type)
 					{
