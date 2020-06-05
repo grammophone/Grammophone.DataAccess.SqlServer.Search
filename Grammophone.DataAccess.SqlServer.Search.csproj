@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{6C1C906F-3781-4B79-BD41-FCA6EE1F4714}</ProjectGuid>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>netStandard2.0</TargetFramework>
     <AssemblyTitle>Grammophone.DataAccess.SqlServer.Search</AssemblyTitle>
     <Product>Grammophone.DataAccess.SqlServer.Search</Product>
     <Copyright>Copyright ©  2018</Copyright>
@@ -15,20 +15,10 @@
     <DebugType>pdbonly</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Irony" Version="0.9.1" />
+    <PackageReference Include="Irony" Version="1.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Net.Http" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="LICENSE.md" />
-    <None Include="README.md" />
 		<None Remove=".git" />
 		<None Remove=".gitignore" />
 	</ItemGroup>
-  <ItemGroup>
-    <Content Include="Syntax cheat sheet.png" />
-  </ItemGroup>
 </Project>
